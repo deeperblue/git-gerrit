@@ -52,12 +52,12 @@ GIT_OUTPUT_FILE="/tmp/git_output$$"
 GIT_DIR=$($GIT rev-parse --git-dir 2>/dev/null)
 
 if [[ -z "$GIT_DIR" ]]; then
-	if [ $1 != "clone" ]&&[ $1 != "config" ]&&[ $1 != "update" ]&&[ $1 != "changeProject" ];then
+	if [ "$1" != "clone" ]&&[ "$1" != "update" ];then
     	die "$this can only be run from a git repository."
 	fi
 fi
 
-if [ $1 != "clone" ]&&[ $1 != "config" ]&&[ $1 != "update" ]&&[ $1 != "changeProject" ];then
+if [ "$1" != "clone" ]&&[ "$1" != "update" ];then
 	CURRENT=$($GIT symbolic-ref -q HEAD || $GIT rev-parse HEAD)
 	CURRENT=${CURRENT#refs/heads/}
 fi
@@ -905,14 +905,15 @@ cloneProject(){
 
 
 updateScript(){
-	test -d git-gerrit && rm -rf git-gerrit
-	git clone ssh://${WHO}@${SERVER}:${PORT}/git-gerrit 1>/dev/null
+	local project="gerrit/git-gerrit"
+	test -d ${project} && rm -rf ${project}
+	git clone ssh://${WHO}@${SERVER}:${PORT}/${project} ${project} 1>/dev/null
 	local RootDir=$(pwd)
 
-	cd git-gerrit
+	cd ${project}
 	./install_local.sh 1>/dev/null
 	cd $RootDir
-	test -d git-gerrit && rm -rf git-gerrit
+	test -d ${project} && rm -rf ${project}
 	good "git-gerrit update success."
 
 }
