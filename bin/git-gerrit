@@ -52,15 +52,16 @@ GIT_OUTPUT_FILE="/tmp/git_output$$"
 GIT_DIR=$($GIT rev-parse --git-dir 2>/dev/null)
 
 if [[ -z "$GIT_DIR" ]]; then
-	if [ "$1" != "clone" ]&&[ "$1" != "update" ];then
+	if [ "$1" != "clone" ]&&[ "$1" != "update" ]&&[ "$1" != "-v" ];then
     	die "$this can only be run from a git repository."
 	fi
 fi
 
-if [ "$1" != "clone" ]&&[ "$1" != "update" ];then
+if [ "$1" != "clone" ]&&[ "$1" != "update" ]&&[ "$1" != "-v" ];then
 	CURRENT=$($GIT symbolic-ref -q HEAD || $GIT rev-parse HEAD)
 	CURRENT=${CURRENT#refs/heads/}
 fi
+
 git() {
     if [[ "$verbose" = true ]]; then
         echo -e "+ ${GREEN}git $@${NO_COLOR}"
@@ -913,10 +914,27 @@ updateScript(){
 	cd ${project}
 	./install_local.sh 1>/dev/null
 	cd $RootDir
-	test -d ${project} && rm -rf ${project}
+	test -d ${project} && rm -rf $(dirname ${project})
 	good "git-gerrit update success."
 
 }
+#强制更新函数
+forceUpdate(){
+	local keyword="git-gerrit script"
+	#good "当前版本:${VERSION}"
+	local server=$($SSH -p ${PORT} ${WHO}@${SERVER} gerrit ls-projects -d | grep "${keyword}" | sed -e "s/.*\(v.*\)/\1/g")
+	#good 服务器版本:${server}
+	local local=$VERSION
+	#good 本地版本:${local}
+	if [ "${local}" != "${server}" ];then
+		good "${SCRIPT}版本有更新"
+		$(which git-gerrit) update 
+		local new_version=$($(which git-gerrit) -v)
+		good "最新${new_version}"
+		exit 0
+	fi
+}
+
 #### caicai ####
 
 #### usage ####
@@ -953,9 +971,12 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.0"
+VERSION="v1.0.1"
 WHO=$($GIT config --global user.name)
 test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
+
+forceUpdate
+
 while true; do
     arg=$1
     shift
