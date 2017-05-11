@@ -551,6 +551,9 @@ abandonChange() {
 
 # git gerrit push
 pushCommit() {
+	if [ "$1" == "-h" ]||[ "$1" == "--help" ];then
+		show_push_help
+	fi
     abort_on_bad_repo_state
 	#最多支持两个参数
     local remote="$1" refs="$2" change="$CHANGE" current="$CURRENT" track
@@ -794,7 +797,7 @@ queryChangesDetail() {
 
 #### caicai ####
 
-function show_clone_help(){
+show_clone_help(){
 printf "Usage :
 	${this} project branch download_dir
 	project\t如果没有指定将会列举当前服务器上所有仓库
@@ -804,7 +807,7 @@ printf "Usage :
 exit 1
 }
 
-function show_open_help(){
+show_open_help(){
 printf "Usage :
 	${this} open commit-id
 	用于通过commit-id直接打开对应gerrit的review地址
@@ -812,11 +815,32 @@ printf "Usage :
 exit 1
 }
 
-function show_init_help(){
+show_init_help(){
 printf "Usage :
 	${this} init
 	gerrit要求代码提交需要有对应的Change-Id作为唯一标示
 	代码仓库第一次下载后需要下载对应的hooks脚本来生成对应Change-Id
+\n"
+exit 1
+}
+
+show_push_help(){
+printf "Usage :
+	${this} push
+	1.先后提交入库顺序导致冲突:
+		a) 在本地再次执行git-gerrit push,重新fetch服务器最新代码
+		b) 本地代码将会download冲突下来，本地代码会提示冲突
+		c) 本地解决冲突后，执行git rebase --continue
+		d) 再次执行git-gerrit push重新上传解决冲突后的代码
+
+	2.代码提交不规范或者有待完善，被打回:
+		a)一次提交5条，第三条需要重新patchset
+		b)本地执行git rebase -i HEAD~4，修改提交pick的表头为edit，让代码回退到第三条，分支处于nobranch缓冲区
+		c)对应修改代码后，git add最新修改到暂存区，执行git commit --amend将最新更新合并到第三条提交
+		d)执行git rebase --continue恢复环境
+		e)重新执行git-gerrit push上传最新修改代码
+Tip :
+	gerrit以change-id作为commit提交的唯一标识码，所以在处理冲突的commit提交或者需要更新修改的commit，只需要保持change-id与之前一致，gerrit就不会产生新的提交。
 \n"
 exit 1
 }
@@ -992,6 +1016,7 @@ Other ：
 	1.脚本运行默认会检查版本是否有更新
 	2.clone命令下载代码后，默认会执行init操作
 	3.push的时候本地不能有未commit修改，push前会先pull --rebase最新代码
+	4.${this} [actions] --help显示每个指令详细说明
 
 version :${VERSION}
 EOF
@@ -1002,7 +1027,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.5"
+VERSION="v1.0.6"
 WHO=$($GIT config --global user.name)
 test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
 
