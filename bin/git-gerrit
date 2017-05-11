@@ -722,6 +722,9 @@ abort_on_bad_repo_state() {
 }
 
 initGerrit() {
+	if [ "$1" == "-h" ]||[ "$1" == "--help" ];then
+		show_init_help
+	fi
 	local git_dir=$($GIT rev-parse --git-dir 2>/dev/null)
     local commit_hook="${git_dir}/hooks/commit-msg"
     local meitu_commit_hook="${git_dir}/hooks"
@@ -793,7 +796,7 @@ queryChangesDetail() {
 
 function show_clone_help(){
 printf "Usage :
-	$0 project branch download_dir
+	${this} project branch download_dir
 	project\t如果没有指定将会列举当前服务器上所有仓库
 	branch\t如果没有指定将会列举当前仓库分支
 	download_dir \t如果没有将默认使用仓库名作为下载文件夹名
@@ -803,8 +806,17 @@ exit 1
 
 function show_open_help(){
 printf "Usage :
-	$0 open commit-id
+	${this} open commit-id
 	用于通过commit-id直接打开对应gerrit的review地址
+\n"
+exit 1
+}
+
+function show_init_help(){
+printf "Usage :
+	${this} init
+	gerrit要求代码提交需要有对应的Change-Id作为唯一标示
+	代码仓库第一次下载后需要下载对应的hooks脚本来生成对应Change-Id
 \n"
 exit 1
 }
@@ -962,25 +974,26 @@ Actions :
 
 Example :
 	${this} push 
-					: 提交当前分支代码到服务器分支，交互式指令提交
+				: 提交当前分支代码到服务器分支，交互式指令提交
 	${this} push master
-					: 提交当前分支修改到服务器master分支
+				: 提交当前分支修改到服务器master分支
 	${this} clone 
-					: 下载服务器代码仓库，不带参数情况下，交互式提示
+				: 下载服务器代码仓库，不带参数情况下，交互式提示
 	${this} clone MT6797/AndroidN master downloadDir
-					: 下载MT6797 android的master分支代码到本地downloadDir文件夹
+				: 下载MT6797 android的master分支代码到本地downloadDir文件夹
 	${this} open commit-id
-					: firefox打开commit-id对应的gerrit review界面
+				: firefox打开commit-id对应的gerrit review界面
 	${this} init 
-					: 初始化当前git仓库，下载hooks脚本到当前仓库
+				: 初始化当前git仓库，下载hooks脚本到当前仓库
 	${this} update 
-					: ${this}脚本升级指令
+				: ${this}脚本升级指令
 
 Other ：
 	1.脚本运行默认会检查版本是否有更新
 	2.clone命令下载代码后，默认会执行init操作
 	3.push的时候本地不能有未commit修改，push前会先pull --rebase最新代码
 
+version :${VERSION}
 EOF
 }
 #### now parse arguments ####
@@ -989,7 +1002,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.4"
+VERSION="v1.0.5"
 WHO=$($GIT config --global user.name)
 test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
 
@@ -1034,7 +1047,7 @@ while true; do
             exit
             ;;
         init)
-            initGerrit
+            initGerrit $@
             exit
             ;;
         open)
