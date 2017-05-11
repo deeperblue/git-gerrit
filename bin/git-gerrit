@@ -932,7 +932,7 @@ forceUpdate(){
 	#good 本地版本:${local}
 	if [ "${local}" != "${server}" ];then
 		good "${SCRIPT}版本有更新"
-		$(which git-gerrit) update 
+		updateScript 
 		local new_version=$($(which git-gerrit) -v)
 		good "最新${new_version}"
 		exit 0
@@ -975,7 +975,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.2"
+VERSION="v1.0.3"
 WHO=$($GIT config --global user.name)
 test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
 
