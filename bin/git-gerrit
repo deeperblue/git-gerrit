@@ -405,7 +405,7 @@ diffPatches() {
             local patch2=$3
             ;;
         *)
-            printShortUsage
+            printUsage
             die "too many arguments"
             ;;
     esac
@@ -942,40 +942,54 @@ forceUpdate(){
 #### caicai ####
 
 #### usage ####
-printShortUsage() {
-    cat << EOF
-   Options are: -e (explain) -v (verbose)
-                -q (quite)   -h (help)
-EOF
-}
 printUsage() {
-    printShortUsage
+cat << EOF
+Usage: ${this} [options] actions
 
-    cat << EOF
+Options :  	
+	--help			: 显示帮助
+	--verbose		: 显示运行命令Log (default: on)
+	--quiet			: 不显示运行命令Log (default: off)
+	--explain		: 只显示Log，不运行命令 (default: off)
+	
 
-OPTIONS
-  -h  --help                  Show this message
-  -v  --verbose               Show all commands before running them (default: on)
-  -q  --quiet                 Don't display commands before running them (default: off)
-  -e  --explain  --dry-run    Don't actually run commands (default: off)
+Actions :
+	init  			: 初始化git仓库的hooks脚本 
+	clone 			: 下载当前服务器代码
+	open  			: 打开对应commit-id的review页面
+	push  			: 提交代码到服务器
+	update			: 脚本更新指令
 
-DESCRIPTION
-  $this assists in code reviews with gerrit, squashing merge local branch to gerrit branch,
-  pushing or pulling changesets to review.
+Example :
+	${this} push 
+					: 提交当前分支代码到服务器分支，交互式指令提交
+	${this} push master
+					: 提交当前分支修改到服务器master分支
+	${this} clone 
+					: 下载服务器代码仓库，不带参数情况下，交互式提示
+	${this} clone MT6797/AndroidN master downloadDir
+					: 下载MT6797 android的master分支代码到本地downloadDir文件夹
+	${this} open commit-id
+					: firefox打开commit-id对应的gerrit review界面
+	${this} init 
+					: 初始化当前git仓库，下载hooks脚本到当前仓库
+	${this} update 
+					: ${this}脚本升级指令
 
-  init
-    Init the gerrit hook.
+Other ：
+	1.脚本运行默认会检查版本是否有更新
+	2.clone命令下载代码后，默认会执行init操作
+	3.push的时候本地不能有未commit修改，push前会先pull --rebase最新代码
 
 EOF
 }
-
 #### now parse arguments ####
 
 getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.3"
+VERSION="v1.0.4"
 WHO=$($GIT config --global user.name)
 test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
 
@@ -1094,5 +1108,5 @@ while true; do
 done
 
 # no subcommand given
-printShortUsage
+printUsage
 exit 2
