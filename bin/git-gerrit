@@ -197,8 +197,8 @@ getGerritServerAndProject() {
         return
     fi
 
-    local url_line=$($GIT remote show -n origin | grep "Push  URL: " | head -n1)
-    local host_and_project=${url_line# *URL: }
+    local host_and_project=$($GIT remote -v | grep push | awk '{print$2}')
+    #local host_and_project=${url_line# *URL: }
 
     host=''
     project=''
@@ -746,35 +746,29 @@ initGerrit() {
 openChange() {
     local change="$CHANGE" user_change="$1" open_chagne="" ok=""
 
-    if [[ -n "$user_change" ]] ; then
-        if is_integer "$user_change" ; then
-            open_change="$user_change"
-        else
-            ok="n"
-        fi
-    elif is_integer "$change" ; then
-        open_chagne="$change"
-    else
-        ok="n"
-    fi
+	if [ "$1" == "-h" ]||[ "$1" == "--help" ];then
+		show_open_help
+	fi
 
-    if [[ "$ok" = "n" ]]; then
-        die "Your must specify change number, or at review branch."
+    if [[ -n "$user_change" ]] ; then
+		open_change="$user_change"
+	else
+		show_open_help
     fi
 
     # get url from gerrit.
     getGerritServerAndProject
-    executeGerritCommand "query" "project:${project}" "change:$change"
+    executeGerritCommand "query" "project:${project}" "--commit-message=$open_change"
 
     url=$(echo "$gerrit_command_result" | grep http | head -n1 | awk '{print $2}')
 
     if [[ -n "$url" ]]; then
         if [[ -n "$BROWSER" ]]; then
-            eval "$BROWSER $url"
+            eval "$BROWSER $url" &>/dev/null  &
         fi
         good $url
     else
-        warn "Could not find URL for change $change."
+        warn "Could not find URL for change $open_change."
     fi
 }
 
@@ -804,8 +798,18 @@ printf "Usage :
 	branch\t如果没有指定将会列举当前仓库分支
 	download_dir \t如果没有将默认使用仓库名作为下载文件夹名
 \n"
+exit 1
 }
-function listProject(){
+
+function show_open_help(){
+printf "Usage :
+	$0 open commit-id
+	用于通过commit-id直接打开对应gerrit的review地址
+\n"
+exit 1
+}
+
+listProject(){
 	local remote_project
 	local count=0
 	#good "for remote_project in $SSH -p $PORT ${WHO}@${SERVER} gerrit "ls-projects""
@@ -821,7 +825,7 @@ function listProject(){
 
 }
 
-function listBranch(){
+listBranch(){
 	local remote_branch
 	local admin="gerrit"
 	local count=0
@@ -838,7 +842,7 @@ function listBranch(){
 
 }
 
-function formatDownload(){
+formatDownload(){
 	local alps_project=$1
 	local alps_branch=$2
 	local download_dir=$3
@@ -971,7 +975,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.1"
+VERSION="v1.0.2"
 WHO=$($GIT config --global user.name)
 test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
 
