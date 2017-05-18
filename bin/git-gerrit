@@ -1027,9 +1027,9 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.6"
-WHO=$($GIT config --global user.name)
-test -z $WHO && die "please set username , you can run \"git config -global user.name yourGerritName\""
+VERSION="v1.0.7"
+WHO=$($GIT config --global gerrit.name)
+test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
 forceUpdate
 
