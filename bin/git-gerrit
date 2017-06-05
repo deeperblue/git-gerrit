@@ -1,5 +1,4 @@
 #!/bin/bash
-
 this=$(basename "$0")
 BROWSER=$(which firefox)
 
@@ -57,7 +56,7 @@ if [[ -z "$GIT_DIR" ]]; then
 	fi
 fi
 
-if [ "$1" != "clone" ]&&[ "$1" != "update" ]&&[ "$1" != "-v" ];then
+if [[ "$1" != "clone" && "$1" != "update" && "$1" != "-v" ]];then
 	CURRENT=$($GIT symbolic-ref -q HEAD || $GIT rev-parse HEAD)
 	CURRENT=${CURRENT#refs/heads/}
 fi
@@ -975,6 +974,45 @@ forceUpdate(){
 	fi
 }
 
+#Add by zhangbin@meitu.com begin,intergrate git-dfout cmd
+function git_dfout()
+{
+    local OUT_PUT_DIR="../"
+    while getopts "o:" arg #选项后面的冒号表示该选项需要参数
+    do
+        case $arg in
+            o)
+                if [ "x$OPTARG" != "x" ] ; then
+                    OUT_PUT_DIR=$OPTARG	
+                fi
+                ;;
+
+            ?) #当有不认识的选项的时候arg为?
+                shell_err "unkonw argument"
+                exit 
+                ;;
+        esac
+    done
+    
+    local dirname="${OUT_PUT_DIR}/diff_$(${GIT} describe | tr -d '\n')_$(date +%Y%m%d_%H%M)"
+    mkdir -p ${dirname}/old/  ${dirname}/new/
+
+    ${GIT} status -s | while read f    
+    do        
+        if [ $(echo $f | awk '{ print $1 }') != "??" ];then        
+            ${GIT} archive HEAD $(echo $f | awk '{ print $2 }') | tar -xf - -C ${dirname}/old/
+        fi            
+        
+        if [ $(echo $f | awk '{ print $1 }') != "D" ];then        
+            cp -af --parents $(echo $f | awk '{ print $2 }') ${dirname}/new/
+        fi
+    done
+    
+    echo "Success save diff_file in ${dirname}"    
+}
+
+#Add end
+
 #### caicai ####
 
 #### usage ####
@@ -995,6 +1033,7 @@ Actions :
 	open  			: 打开对应commit-id的review页面
 	push  			: 提交代码到服务器
 	update			: 脚本更新指令
+	dfout 			: 输出当前修改的原始/修改文件
 
 Example :
 	${this} push 
@@ -1011,7 +1050,10 @@ Example :
 				: 初始化当前git仓库，下载hooks脚本到当前仓库
 	${this} update 
 				: ${this}脚本升级指令
-
+	${this} dfout 
+				: 输出当前修改的原始/修改文件  -o参数输出目录(不带-o参数默认输出到上一级目录) 
+				
+                
 Other ：
 	1.脚本运行默认会检查版本是否有更新
 	2.clone命令下载代码后，默认会执行init操作
@@ -1135,6 +1177,10 @@ while true; do
             ;;
         update)
             updateScript
+            exit
+            ;;
+        dfout)
+            git_dfout $@
             exit
             ;;
         *)
