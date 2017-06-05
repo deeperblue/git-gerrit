@@ -822,7 +822,26 @@ printf "Usage :
 \n"
 exit 1
 }
+#Add by csy1@meitu.com begin,intergrate git-get cmd
+show_get_help(){
+printf "Usage :
+	${this} get commit-id path
+	用于提取某笔commit信息对应的修改文件和修改前文件，提取目录为new和old文件夹，保持文件目录树和前后修改对应点，方便meios功能移植对比合入修改点；
 
+	commit-id：对应需要提取的commit-id
+	path：可选参数，默认上一级的../path目录
+
+	/home/user/patch/[CHG]commit-msg
+	├── 0001-CHG.patch
+	├── new
+	│   └── packages
+	└── old
+	    └── packages
+
+\n"
+exit 1
+}
+#Add intergrate git-get cmd end
 show_push_help(){
 printf "Usage :
 	${this} push
@@ -1014,6 +1033,53 @@ function git_dfout()
 #Add end
 
 #### caicai ####
+#Add by csy1@meitu.com begin,intergrate git-get cmd
+function git_get(){
+	if [ "$1" == "-h" ]||[ "$1" == "--help" ];then
+		show_get_help
+	fi
+    #输出文件夹名称
+    local originDir="old";
+    local modifyDir="new";
+    #取参
+    local commitId=$1;
+    local rootdir=$(pwd);
+    local path=$2;
+    test -z ${commitId} && commitId=$(${GIT} rev-parse --verify HEAD);
+    test -z $path && path="../patch";
+    #创建输出文件夹
+    local name=$(${GIT} log -1 $1 --format=%s| sed "s# ##g"| tr ":" "-");
+    path=$path/${name};
+    cd $(${GIT} rev-parse --show-toplevel);
+    #判断commit-id，输出文件
+    for file in $(${GIT} show ${commitId} --format=%n --name-only  );
+    do
+        good "$file";
+        #输出当前commit-id对应文件
+        test -d ${path}/${modifyDir}/$(dirname $file) || mkdir -p ${path}/${modifyDir}/$(dirname $file);
+        ${GIT} show ${commitId}:$file > ${path}/${modifyDir}/$file;
+        #查找当前文件上一条状态
+        local status=$(${GIT} show  --format=%n  ${commitId} --name-status ${file} | awk -F" " '{print$1}');
+        if [ "$(echo "${status}" | grep -ow M)" == "M" ]; then
+            #fix由于merge信息可能导致上一条commit-id无法查找的错误
+            #fix由于short commit id值导致显示错误
+            if [ "$(echo ${commitId} | wc -L)" -le "7" ]; then
+                local last_commit_id=$(${GIT} log  --format=%h  ${file} | grep ${commitId} -1 |tail -1);
+            else
+                local last_commit_id=$(${GIT} log  --format=%H  ${file} | grep ${commitId} -1 |tail -1);
+            fi;
+            #输出上个版本文件
+            test -d ${path}/${originDir}/$(dirname $file) || mkdir -p ${path}/${originDir}/$(dirname $file);
+            ${GIT} show ${last_commit_id}:${file} > ${path}/${originDir}/$file;
+        fi;
+    done;
+    #生成标注patch'文件备用
+    ${GIT} format-patch -1 ${commitId} -o ${path} >/dev/null;
+    cd - > /dev/null;
+    good "patch补丁文件保存到 ${path}";
+
+}
+#Add intergrate git-get cmd end
 
 #### usage ####
 printUsage() {
@@ -1033,6 +1099,7 @@ Actions :
 	open  			: 打开对应commit-id的review页面
 	push  			: 提交代码到服务器
 	update			: 脚本更新指令
+	get			: 输出对应commit-id的原始/修改文件
 	dfout 			: 输出当前修改的原始/修改文件
 
 Example :
@@ -1052,6 +1119,10 @@ Example :
 				: ${this}脚本升级指令
 	${this} dfout 
 				: 输出当前修改的原始/修改文件  -o参数输出目录(不带-o参数默认输出到上一级目录) 
+	${this} get  commit-id
+				: 输出对应commit-id的原始/修改文件 (默认输出路径../patch)
+	${this} get  commit-id path
+				: 输出对应commit-id的原始/修改文件 commit-id为目标commit id值，path为输出文件夹
 				
                 
 Other ：
@@ -1069,7 +1140,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.7"
+VERSION="v1.0.8"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
@@ -1181,6 +1252,10 @@ while true; do
             ;;
         dfout)
             git_dfout $@
+            exit
+            ;;
+        get)
+            git_get $@
             exit
             ;;
         *)
