@@ -1033,9 +1033,10 @@ function git_dfout()
 #Only for cherry-pick fast review, It's a spm tools...
 function fast_review()
 {
-    current_branch_name=$(git branch | grep "*" | awk '{print $2}')
+    current_branch_name=$(${GIT} branch | grep "*" | awk '{print $2}')
     SUBMIT_LIST=""
-    for cm in $(git rev-list "$(git config branch.${current_branch_name}.remote)/$(basename $(git config branch.${current_branch_name}.merge))..HEAD")
+    echo "${GIT} rev-list \"$(${GIT} config branch.${current_branch_name}.remote)/$(basename $(${GIT} config branch.${current_branch_name}.merge))..HEAD\""
+    for cm in $(${GIT} rev-list "$(${GIT} config branch.${current_branch_name}.remote)/$(basename $(${GIT} config branch.${current_branch_name}.merge))..HEAD")
     do
         echo "ssh -p 29418 172.16.1.243 gerrit review --code-review 2 $cm"
         ssh -p 29418 172.16.1.243 gerrit review --code-review 2 $cm
@@ -1056,7 +1057,6 @@ function fast_review()
         fi
     done
 }
-
 #Add end
 
 #### caicai ####
