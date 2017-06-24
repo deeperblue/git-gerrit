@@ -1281,15 +1281,18 @@ while true; do
             git_dfout $@
             exit
             ;;
+<<<<<<< HEAD
         get)
             git_get $@
             exit
             ;;
+=======
         autore)
             fast_review $@
             exit
             ;;        
             
+>>>>>>> [CHG] 加入autore命令用于快速review cherry-pick的修改
         *)
             warn "$this: unrecognized option or subcommand $arg"
             printUsage
