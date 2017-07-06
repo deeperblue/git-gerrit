@@ -884,7 +884,9 @@ listBranch(){
 	local admin="gerrit"
 	local count=0
 	#good "for remote_branch in $SSH -p ${PORT} ${WHO}@${SERVER} gerrit ls-user-refs  --only-refs-heads -p ${alps_project} -u ${admin}|xargs -I [] basename []"
-	for remote_branch in $($SSH -p ${PORT} ${WHO}@${SERVER} gerrit ls-user-refs  --only-refs-heads -p ${alps_project} -u ${admin}|xargs -I [] basename [])
+	#for remote_branch in $($SSH -p ${PORT} ${WHO}@${SERVER} gerrit ls-user-refs  --only-refs-heads -p ${alps_project} -u ${admin}|xargs -I [] basename [])
+	#good "for remote_branch in $($SSH -p ${PORT} ${WHO}@${SERVER} gerrit query status:merged project:${alps_project} | grep "branch:" | sort | uniq | awk -F ":" '{print$2}')"
+	for remote_branch in $($SSH -p ${PORT} ${WHO}@${SERVER} gerrit query status:merged project:${alps_project} | grep "branch:" | sort | uniq | awk -F ":" '{print$2}')
 	do
 		#if [ ! $(echo $remote_branch| grep -E "modem|^All-|^teksun_" ) ];then
 			echo -n "$count. "
@@ -1167,7 +1169,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.8"
+VERSION="v1.0.9"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
