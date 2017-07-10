@@ -1059,6 +1059,93 @@ function fast_review()
         fi
     done
 }
+
+
+function mergetool_config()
+{
+    local merge_tool
+    if [[ "$1" == "wincompare" || "$1" == "bcompare" || "$1" == "vimdiff" ]];then
+        merge_tool="$1"
+    else         
+        TOOLS_TBL=("wincompare" "bcompare" "vimdiff")
+        warn "Please Select git mergetool"  
+        for ((i=0; i<${#TOOLS_TBL[*]}; i++))
+        do
+            warn "${i}. ${TOOLS_TBL[$i]}"
+        done    
+        warn "Which would you like: "
+        read -a num
+        for ((cnt=0; cnt<${#TOOLS_TBL[*]}; cnt++))
+        do           
+            if [[ "${num}" == "${cnt}" || "${num}" == "${TOOLS_TBL[$cnt]}" ]]; then                
+                merge_tool="${TOOLS_TBL[$cnt]}"
+                break
+            fi
+        done 
+    fi
+    
+    if [ "$merge_tool" == "wincompare" ]; then        
+        ${GIT} config --global difftool.tool wincompare
+        ${GIT} config --global difftool.wincompare.cmd 'mkdir -p $PWD/../diffdir/ && cp -R --force --parent $LOCAL $PWD/../diffdir/ && wincompare $REMOTE $PWD/../diffdir/$LOCAL && rm -rf ../diffdir/$LOCAL'
+        ${GIT} config --global difftool.wincompare.keepbackup false
+        ${GIT} config --global difftool.wincompare.trustexitcode true
+        ${GIT} config --global difftool.prompt false
+        ${GIT} config --global merge.tool wincompare
+        ${GIT} config --global mergetool.wincompare.cmd 'wincompare $PWD/$LOCAL $PWD/$REMOTE $PWD/$BASE $PWD/$MERGED -mergeoutput=$PWD/$MERGED'
+        ${GIT} config --global mergetool.wincompare.keepbackup false
+        ${GIT} config --global mergetool.wincompare.trustexitcode true
+        ${GIT} config --global merge.prompt false
+        ${GIT} config --global alias.bll "log --graph --pretty=format:'%h %s <%an>' --abbrev-commit --date=relative"
+    elif [ "$merge_tool" == "bcompare" ]; then
+        ${GIT} config --global difftool.tool=wincompare
+        ${GIT} config --global difftool.bcompare.cmd 'bcompare $REMOTE $LOCAL '
+        ${GIT} config --global difftool.bcompare.keepbackup false
+        ${GIT} config --global difftool.bcompare.trustexitcode true
+        ${GIT} config --global difftool.prompt false
+        ${GIT} config --global merge.tool bcompare
+        ${GIT} config --global mergetool.bcompare.cmd 'bcompare $LOCAL $REMOTE $BASE $MERGED -mergeoutput=$MERGED'
+        ${GIT} config --global mergetool.bcompare.keepbackup false
+        ${GIT} config --global mergetool.bcompare.trustexitcode true
+        ${GIT} config --global merge.prompt false       
+    elif [ "$merge_tool" == "vimdiff" ]; then
+        ${GIT} config --global difftool.tool=vimdiff
+        ${GIT} config --global difftool.vimdiff.cmd 'vimdiff $REMOTE $LOCAL '
+        ${GIT} config --global difftool.vimdiff.keepbackup false
+        ${GIT} config --global difftool.vimdiff.trustexitcode true
+        ${GIT} config --global difftool.prompt false
+        ${GIT} config --global merge.tool vimdiff
+        ${GIT} config --global mergetool.vimdiff.cmd 'vimdiff $LOCAL $REMOTE $BASE $MERGED -mergeoutput=$MERGED'
+        ${GIT} config --global mergetool.vimdiff.keepbackup false
+        ${GIT} config --global mergetool.vimdiff.trustexitcode true
+        ${GIT} config --global merge.prompt false        
+    else
+        die "UnSupport know tools"
+        exit
+    fi
+}
+
+function gitconfig_dispatch()
+{
+    while true; do
+        arg=$1
+        shift
+        test -z "$arg" && break;
+
+        case $arg in
+            mergetool)
+                mergetool_config $@
+                exit
+                ;;
+            *)
+                warn "$this: unrecognized option or subcommand $arg"
+                printUsage
+                exit 2
+                ;;
+        esac
+    done
+
+}
+
 #Add end
 
 #### caicai ####
@@ -1152,6 +1239,8 @@ Example :
 				: 输出对应commit-id的原始/修改文件 (默认输出路径../patch)
 	${this} get  commit-id path
 				: 输出对应commit-id的原始/修改文件 commit-id为目标commit id值，path为输出文件夹
+	${this} gitconfig mergetool (tools name)
+				: 自动化配置mergetool的git config
 				
                 
 Other ：
@@ -1289,6 +1378,10 @@ while true; do
             ;;
         autore)
             fast_review $@
+            exit
+            ;;        
+        gitconfig)
+            gitconfig_dispatch $@
             exit
             ;;        
             
