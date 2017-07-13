@@ -1041,7 +1041,7 @@ function fast_review()
     for cm in $(${GIT} rev-list "$(${GIT} config branch.${current_branch_name}.remote)/$(basename $(${GIT} config branch.${current_branch_name}.merge))..HEAD")
     do
         echo "ssh -p 29418 172.16.1.243 gerrit review --code-review 2 $cm"
-        ssh -p 29418 172.16.1.243 gerrit review --code-review 2 $cm
+        ssh -p 29418 ${WHO}@172.16.1.243 gerrit review --code-review 2 $cm
         if [ $? != 0 ];then 
         echo "review faild."
             exit
@@ -1052,7 +1052,7 @@ function fast_review()
     for s in ${SUBMIT_LIST}
     do
         echo "ssh -p 29418 172.16.1.243 gerrit review -s $s"
-        ssh -p 29418 172.16.1.243 gerrit review -s $s
+        ssh -p 29418 ${WHO}@172.16.1.243 gerrit review -s $s
         if [ $? != 0 ];then
             echo "submit faild."
             exit
