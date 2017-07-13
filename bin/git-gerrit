@@ -634,6 +634,7 @@ pushCommit() {
 	local gerrit_reviewer=$($GIT config --global user.reviewer)
 	test -z $gerrit_reviewer && warn "you can run \"git config --global user.reviewer YourReviewerEmail1,YourReviewerEmail2,YourReviewerEmail3\""
 	if [[ -n $gerrit_reviewer ]]&&[ ! "$(echo "$change_args"|grep -o '%r=')" ];then
+		gerrit_reviewer=$(echo ${gerrit_reviewer} | sed -e 's#,#,cc=#g')
 		change_args="$change_args%r=$gerrit_reviewer"
 	fi
 	#echo change_args=$change_args
@@ -1258,7 +1259,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.1.243"
 PORT="29418"
-VERSION="v1.0.9"
+VERSION="v1.1.0"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
