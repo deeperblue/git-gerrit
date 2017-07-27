@@ -196,7 +196,7 @@ getGerritServerAndProject() {
         return
     fi
 
-    local host_and_project=$($GIT remote -v | grep push | awk '{print$2}')
+    local host_and_project=$($GIT remote -v | grep push | awk '{print$2}'| tail -1)
     #local host_and_project=${url_line# *URL: }
 
     host=''
