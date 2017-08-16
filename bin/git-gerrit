@@ -1147,6 +1147,94 @@ function gitconfig_dispatch()
 
 }
 
+function check_branch_exist()
+{
+    IS_EXIST="false"
+    for line in $(${GIT} branch -a | grep ${1} | tr -d '*' | grep -o "[^ ]\+\( \+[^ ]\+\)*")
+    do
+        if [ "$line" == "${1}" ]; then
+            IS_EXIST="true"
+            break
+        fi                
+    done
+    
+    echo "${IS_EXIST}"
+}
+
+
+# 输出类型 unmerged：输出未合并的 all：输出所有
+# $2 源分支名  $3 目标分支名
+function branch_diff()
+{
+    OUTPUT_TYPE=$1
+
+    #检查分支是否存在
+    SRC_BRANCH_NAME=$2
+    TARGET_BRANCH_NAME=$3
+    
+    if [[ $(check_branch_exist ${SRC_BRANCH_NAME}) == "false" || $(check_branch_exist ${TARGET_BRANCH_NAME}) == "false" ]];then 
+        die "branch is not exist!"
+        exit 1
+    fi
+    
+    #获取源分支上的提交
+    GIT_COMMIT=$(${GIT} log ${SRC_BRANCH_NAME} --graph --pretty=format:'%h %s <%an>' --abbrev-commit --date=relative | tr -d "*\\\|/" | awk '{print $1}'| sed '/^$/d')
+    ALL_COMMIT=""
+    for cm in ${GIT_COMMIT}
+    do
+      ALL_COMMIT="$cm ${ALL_COMMIT}"
+    done  
+    
+    #检查修改是否合入
+    COUNT=0
+    TOTAL_COUNT=0
+    for hash in ${ALL_COMMIT}
+    do
+        let COUNT=$COUNT+1
+        CHANGE_ID=$(${GIT} log -n1 ${hash} | grep "    Change-Id: " | sed "s/    Change-Id: //")
+        if [[ $(${GIT} log ${TARGET_BRANCH_NAME} | grep "${CHANGE_ID}") != "" ]];then        
+            IS_MERGE="merged"
+        else 
+            IS_MERGE="unmerged"   
+            let TOTAL_COUNT++
+        fi
+        
+        if [ ${OUTPUT_TYPE} == "unmerged" ]; then
+            if [ ${IS_MERGE} == "unmerged" ];then
+                echo "$COUNT || ${IS_MERGE} || ${CHANGE_ID} || $(${GIT} log --graph --pretty=format:'%h || <%an> || %s' --abbrev-commit --date=relative -n1 $hash)"
+            fi
+        else    
+            echo "$COUNT || ${IS_MERGE} || ${CHANGE_ID} || $(${GIT} log --graph --pretty=format:'%h || <%an> || %s' --abbrev-commit --date=relative -n1 $hash)"
+        fi
+    done
+    
+    echo "There are ${TOTAL_COUNT} commits not merged"
+}
+
+function get_current_branch
+{
+    ${GIT} branch | grep '*' | tr -d '*' | grep -o "[^ ]\+\( \+[^ ]\+\)*"
+}
+
+function branch_diff_main()
+{
+    TYPE="unmerged"
+    SOURCE_BRANCH=$(get_current_branch)
+    TARGET_BRANCH=""
+    while [ "$1" != "" ]; do
+            case $1 in
+                    --source)               SOURCE_BRANCH=$2; shift;;
+                    -s)                     SOURCE_BRANCH=$2; shift;;
+                    --target)               TARGET_BRANCH=$2; shift;;
+                    -t)                     TARGET_BRANCH=$2; shift;;
+                    --type)                 TYPE=$2; shift;;
+            esac
+            shift;
+    done
+
+    branch_diff $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH}
+}
+
 #Add end
 
 #### caicai ####
@@ -1241,8 +1329,11 @@ Example :
 	${this} get  commit-id path
 				: 输出对应commit-id的原始/修改文件 commit-id为目标commit id值，path为输出文件夹
 	${this} gitconfig mergetool (tools name)
-				: 自动化配置mergetool的git config
-				
+				: 自动化配置mergetool的git config                
+	${this} branchdiff --source or -s 源分支,默认当前分支
+                       --target or -t 目标分支
+                       --type  unmerged/all  输出log类型, 默认unmerged
+				: 根据ChangeID检查源分支中修改是否合并到目标分支
                 
 Other ：
 	1.脚本运行默认会检查版本是否有更新
@@ -1385,7 +1476,10 @@ while true; do
             gitconfig_dispatch $@
             exit
             ;;        
-            
+        branchdiff)        
+            branch_diff_main $@
+            exit
+            ;;        
         *)
             warn "$this: unrecognized option or subcommand $arg"
             printUsage
