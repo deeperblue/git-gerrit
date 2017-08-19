@@ -1041,8 +1041,8 @@ function fast_review()
     echo "${GIT} rev-list \"$(${GIT} config branch.${current_branch_name}.remote)/$(basename $(${GIT} config branch.${current_branch_name}.merge))..HEAD\""
     for cm in $(${GIT} rev-list "$(${GIT} config branch.${current_branch_name}.remote)/$(basename $(${GIT} config branch.${current_branch_name}.merge))..HEAD")
     do
-        echo "ssh -p 29418 172.16.1.243 gerrit review --code-review 2 $cm"
-        ssh -p 29418 ${WHO}@172.16.1.243 gerrit review --code-review 2 $cm
+        echo "ssh -p 29418 172.16.32.243 gerrit review --code-review 2 $cm"
+        ssh -p 29418 ${WHO}@172.16.32.243 gerrit review --code-review 2 $cm
         if [ $? != 0 ];then 
         echo "review faild."
             exit
@@ -1052,8 +1052,8 @@ function fast_review()
 
     for s in ${SUBMIT_LIST}
     do
-        echo "ssh -p 29418 172.16.1.243 gerrit review -s $s"
-        ssh -p 29418 ${WHO}@172.16.1.243 gerrit review -s $s
+        echo "ssh -p 29418 172.16.32.243 gerrit review -s $s"
+        ssh -p 29418 ${WHO}@172.16.32.243 gerrit review -s $s
         if [ $? != 0 ];then
             echo "submit faild."
             exit
@@ -1348,9 +1348,9 @@ EOF
 
 getBranchInfo
 get_change_number_from_branch
-SERVER="172.16.1.243"
+SERVER="172.16.32.243"
 PORT="29418"
-VERSION="v1.1.0"
+VERSION="v1.1.1"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
