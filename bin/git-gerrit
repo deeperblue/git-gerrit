@@ -67,7 +67,8 @@ git() {
     fi
 
     if [[ "$run" = true ]]; then
-        $GIT $@ 2>&1 | tee /dev/tty > $GIT_OUTPUT_FILE
+        #$GIT $@ 2>&1 | tee /dev/tty > $GIT_OUTPUT_FILE
+        $GIT $@ | tee /dev/tty > $GIT_OUTPUT_FILE
         return ${PIPESTATUS[0]}
     fi
 }
@@ -1355,7 +1356,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.32.243"
 PORT="29418"
-VERSION="v1.1.3"
+VERSION="v1.1.4"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
