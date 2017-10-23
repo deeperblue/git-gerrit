@@ -1164,36 +1164,54 @@ function check_branch_exist()
 
 
 # 输出类型 unmerged：输出未合并的 all：输出所有
-# $2 源分支名  $3 目标分支名  $4 作者名字
-function branch_diff()
+# $1 源目录   $2目标目录  $3 类型 $4 源分支名  $5 目标分支名    $6 作者名字 
+function project_diff()
 {
-    local OUTPUT_TYPE=$1
 
     #检查分支是否存在
-    local SRC_BRANCH_NAME=$2
-    local TARGET_BRANCH_NAME=$3
-    local AUTHOR=$4
+    local SRC_DIR=$1
+    local TARGET_DIR=$2
+    local OUTPUT_TYPE=$3
+    local SRC_BRANCH_NAME=$4
+    local TARGET_BRANCH_NAME=$5
+    local AUTHOR=$6
     
-    if [[ $(check_branch_exist ${SRC_BRANCH_NAME}) == "false" || $(check_branch_exist ${TARGET_BRANCH_NAME}) == "false" ]];then 
-        die "branch is not exist!"
-        exit 1
+    if [[ -d ${SRC_DIR} ]];then
+        cd ${SRC_DIR}
+        if [ $(check_branch_exist ${SRC_BRANCH_NAME}) == "false" ];then
+            die "src branch is not exist"
+        fi    
+    else
+        die "src branch is not exist"
+    fi
+
+    if [[ -d ${TARGET_DIR} ]];then
+        cd ${TARGET_DIR}
+        if [ $(check_branch_exist ${TARGET_BRANCH_NAME}) == "false" ];then
+            die "target branch is not exist"
+        fi    
+    else
+        die "target branch is not exist"
     fi
     
     #获取源分支上的提交
+    cd ${SRC_DIR}    
     GIT_COMMIT=$(${GIT} log --author=${AUTHOR} ${SRC_BRANCH_NAME} --graph --pretty=format:'%h %s <%an>' --abbrev-commit --date=relative | tr -d "*\\\|/" | awk '{print $1}'| sed '/^$/d')
     ALL_COMMIT=""
     for cm in ${GIT_COMMIT}
     do
       ALL_COMMIT="$cm ${ALL_COMMIT}"
-    done  
-    
+    done      
     #检查修改是否合入
+    cd ${TARGET_DIR}
     COUNT=0
     TOTAL_COUNT=0
     for hash in ${ALL_COMMIT}
     do
         let COUNT=$COUNT+1
+        cd ${SRC_DIR}            
         CHANGE_ID=$(${GIT} log -n1 ${hash} | grep "    Change-Id: " | sed "s/    Change-Id: //")
+        cd ${TARGET_DIR}        
         if [[ $(${GIT} log ${TARGET_BRANCH_NAME} | grep "${CHANGE_ID}") != "" ]];then        
             IS_MERGE="merged"
         else 
@@ -1201,6 +1219,7 @@ function branch_diff()
             let TOTAL_COUNT++
         fi
         
+        cd ${SRC_DIR}
         if [ ${OUTPUT_TYPE} == "unmerged" ]; then
             if [ ${IS_MERGE} == "unmerged" ];then
                 echo "$COUNT || ${IS_MERGE} || ${CHANGE_ID} || $(${GIT} log --graph --pretty=format:'%h || <%an> || %s' --abbrev-commit --date=relative -n1 $hash)"
@@ -1211,6 +1230,12 @@ function branch_diff()
     done
     
     echo "There are ${TOTAL_COUNT} commits not merged"
+}
+
+function branch_diff()
+{
+    local DIR=$(pwd)
+    project_diff ${DIR} ${DIR} $@ 
 }
 
 function get_current_branch
@@ -1239,6 +1264,30 @@ function branch_diff_main()
     branch_diff $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${AUTHOR}
 }
 
+function project_diff_main()
+{
+    TYPE="unmerged"
+    local SOURCE_BRANCH=$(get_current_branch)
+    local TARGET_BRANCH=""
+    local AUTHOR=""
+    while [ "$1" != "" ]; do
+            case $1 in
+                    --sourceproject)        SOURCE_DIR=$2; shift;;
+                    -sp)                    SOURCE_DIR=$2; shift;;
+                    --targetproject)        TARGET_DIR=$2; shift;;
+                    -tp)                    TARGET_DIR=$2; shift;;
+                    --source)               SOURCE_BRANCH=$2; shift;;
+                    -s)                     SOURCE_BRANCH=$2; shift;;
+                    --target)               TARGET_BRANCH=$2; shift;;
+                    -t)                     TARGET_BRANCH=$2; shift;;
+                    --type)                 TYPE=$2; shift;;
+                    --author)               AUTHOR=$2; shift;;
+            esac
+            shift;
+    done
+
+    project_diff ${SOURCE_DIR} ${TARGET_DIR} $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${AUTHOR} 
+}
 #Add end
 
 #### caicai ####
@@ -1336,6 +1385,14 @@ Example :
 				: 自动化配置mergetool的git config                
 	${this} branchdiff 
 				: 根据ChangeID检查源分支中修改是否合并到目标分支
+                                --source or -s 源分支,默认当前分支
+                                --target or -t 目标分支
+                                --type  unmerged/all  输出log类型, 默认unmerged
+                                --author 作者名  只检查源分支中指定作者名的提交
+	${this} projectdiff 
+				: 根据ChangeID检查源分支中修改是否合并到目标分支
+                                --sourceproject or -sp 源分支,默认当前分支
+                                --targetproject or -tp 目标分支
                                 --source or -s 源分支,默认当前分支
                                 --target or -t 目标分支
                                 --type  unmerged/all  输出log类型, 默认unmerged
@@ -1484,6 +1541,10 @@ while true; do
             ;;        
         branchdiff)        
             branch_diff_main $@
+            exit
+            ;;        
+        projectdiff)        
+            project_diff_main $@
             exit
             ;;        
         *)
