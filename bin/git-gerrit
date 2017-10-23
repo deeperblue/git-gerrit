@@ -1413,7 +1413,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.32.243"
 PORT="29418"
-VERSION="v1.1.4"
+VERSION="v1.1.5"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
