@@ -871,7 +871,7 @@ listProject(){
 	#good "for remote_project in $SSH -p $PORT ${WHO}@${SERVER} gerrit "ls-projects""
 	for remote_project in $($SSH -p $PORT ${WHO}@${SERVER} gerrit "ls-projects")
 	do
-		if [ ! $(echo $remote_project | grep -E "gerrit|^All-" ) ];then
+		if [ ! $(echo $remote_project | grep -E "Tiffany|Tiffany-O|gerrit|^All-" ) ];then
 			echo -n "$count. "
 			echo $remote_project
 			PROJECTS[$count]=$remote_project
@@ -1413,7 +1413,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.32.243"
 PORT="29418"
-VERSION="v1.1.5"
+VERSION="v1.1.6"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
