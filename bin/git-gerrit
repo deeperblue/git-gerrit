@@ -1174,7 +1174,8 @@ function project_diff()
     local OUTPUT_TYPE=$3
     local SRC_BRANCH_NAME=$4
     local TARGET_BRANCH_NAME=$5
-    local AUTHOR=$6
+	local LOCAL_GIT_PATCH=$6
+    local AUTHOR=$7
     
     if [[ -d ${SRC_DIR} ]];then
         cd ${SRC_DIR}
@@ -1196,7 +1197,7 @@ function project_diff()
     
     #获取源分支上的提交
     cd ${SRC_DIR}    
-    GIT_COMMIT=$(${GIT} log --author=${AUTHOR} ${SRC_BRANCH_NAME} --graph --pretty=format:'%h %s <%an>' --abbrev-commit --date=relative | tr -d "*\\\|/" | awk '{print $1}'| sed '/^$/d')
+    GIT_COMMIT=$(${GIT} log --author=${AUTHOR} ${SRC_BRANCH_NAME} --graph --pretty=format:'%h %s <%an>' --abbrev-commit --date=relative ${LOCAL_GIT_PATCH} | tr -d "*\\\|/" | awk '{print $1}'| sed '/^$/d')
     ALL_COMMIT=""
     for cm in ${GIT_COMMIT}
     do
@@ -1249,6 +1250,7 @@ function branch_diff_main()
     local SOURCE_BRANCH=$(get_current_branch)
     local TARGET_BRANCH=""
     local AUTHOR=""
+	local GIT_PATCH="."
     while [ "$1" != "" ]; do
             case $1 in
                     --source)               SOURCE_BRANCH=$2; shift;;
@@ -1257,11 +1259,13 @@ function branch_diff_main()
                     -t)                     TARGET_BRANCH=$2; shift;;
                     --type)                 TYPE=$2; shift;;
                     --author)               AUTHOR=$2; shift;;
+					--path)					GIT_PATCH=$2; shift;;
+					-p)						GIT_PATCH=$2; shift;;
             esac
             shift;
     done
 
-    branch_diff $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${AUTHOR}
+    branch_diff $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${GIT_PATCH} ${AUTHOR}
 }
 
 function project_diff_main()
@@ -1269,7 +1273,7 @@ function project_diff_main()
     TYPE="unmerged"
     local SOURCE_BRANCH=$(get_current_branch)
     local TARGET_BRANCH=""
-    local AUTHOR=""
+    local AUTHOR="."
     while [ "$1" != "" ]; do
             case $1 in
                     --sourceproject)        SOURCE_DIR=$2; shift;;
@@ -1282,11 +1286,13 @@ function project_diff_main()
                     -t)                     TARGET_BRANCH=$2; shift;;
                     --type)                 TYPE=$2; shift;;
                     --author)               AUTHOR=$2; shift;;
+					--path)					GIT_PATCH=$2; shift;;
+					-p)						GIT_PATCH=$2; shift;;
             esac
             shift;
     done
 
-    project_diff ${SOURCE_DIR} ${TARGET_DIR} $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${AUTHOR} 
+    project_diff ${SOURCE_DIR} ${TARGET_DIR} $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${GIT_PATCH} ${AUTHOR} 
 }
 #Add end
 
@@ -1389,6 +1395,7 @@ Example :
                                 --target or -t 目标分支
                                 --type  unmerged/all  输出log类型, 默认unmerged
                                 --author 作者名  只检查源分支中指定作者名的提交
+								--path or -p 比较的分目录
 	${this} projectdiff 
 				: 根据ChangeID检查源分支中修改是否合并到目标分支
                                 --sourceproject or -sp 源分支,默认当前分支
@@ -1397,6 +1404,7 @@ Example :
                                 --target or -t 目标分支
                                 --type  unmerged/all  输出log类型, 默认unmerged
                                 --author 作者名  只检查源分支中指定作者名的提交
+								--path or -p 比较的分目录
                 
 Other ：
 	1.脚本运行默认会检查版本是否有更新
@@ -1413,7 +1421,7 @@ getBranchInfo
 get_change_number_from_branch
 SERVER="172.16.32.243"
 PORT="29418"
-VERSION="v1.1.6"
+VERSION="v1.1.7"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
