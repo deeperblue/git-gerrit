@@ -739,15 +739,16 @@ initGerrit() {
     #fi
 
 	getGerritServerAndProject
-	rm -rf ${meitu_commit_hook}/
-	git clone ssh://${WHO}@${SERVER}:${PORT}/gerrit/hook ${meitu_commit_hook} || die "failed to add gerrit commit-msg hook."
-	cp ${meitu_commit_hook}/git_hooks/*  ${meitu_commit_hook}/
-	if [ -f ${meitu_commit_hook}/commit-msg ];then
-		chmod +x "${commit_hook}"
-    	echo "gerrit commit-msg hook setup correctly."
-	else
-		die "${meitu_commit_hook} don't found commit-msg!"
-	fi
+	scp -p -P 29418 ${WHO}@${SERVER}:hooks/commit-msg ${commit_hook}
+	#rm -rf ${meitu_commit_hook}/
+	#git clone ssh://${WHO}@${SERVER}:${PORT}/gerrit/hook ${meitu_commit_hook} || die "failed to add gerrit commit-msg hook."
+	#cp ${meitu_commit_hook}/git_hooks/*  ${meitu_commit_hook}/
+	#if [ -f ${meitu_commit_hook}/commit-msg ];then
+	#	chmod +x "${commit_hook}"
+    #	echo "gerrit commit-msg hook setup correctly."
+	#else
+	#	die "${meitu_commit_hook} don't found commit-msg!"
+	#fi
 }
 
 openChange() {
@@ -1420,13 +1421,13 @@ EOF
 
 getBranchInfo
 get_change_number_from_branch
-SERVER="172.16.32.243"
+SERVER="shaitgrt01"
 PORT="29418"
-VERSION="v1.1.8"
+VERSION="v1.2.0"
 WHO=$($GIT config --global gerrit.name)
 test -z $WHO && die "please set your Gerrit username , you can run \"git config --global gerrit.name yourGerritName\""
 
-forceUpdate
+#forceUpdate
 
 while true; do
     arg=$1
