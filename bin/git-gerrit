@@ -1177,6 +1177,7 @@ function project_diff()
     local TARGET_BRANCH_NAME=$5
 	local LOCAL_GIT_PATCH=$6
     local AUTHOR=$7
+    local AFTER_DATE=$8
     
     if [[ -d ${SRC_DIR} ]];then
         cd ${SRC_DIR}
@@ -1195,10 +1196,14 @@ function project_diff()
     else
         die "target branch is not exist"
     fi
+
+    if [ "x$AFTER_DATE" != "x" ];then
+        AFTER_DATE="--after=${AFTER_DATE}"
+    fi
     
     #获取源分支上的提交
     cd ${SRC_DIR}    
-    GIT_COMMIT=$(${GIT} log --author=${AUTHOR} ${SRC_BRANCH_NAME} --graph --pretty=format:'%h %s <%an>' --abbrev-commit --date=relative ${LOCAL_GIT_PATCH} | tr -d "*\\\|/" | awk '{print $1}'| sed '/^$/d')
+    GIT_COMMIT=$(${GIT} log --author=${AUTHOR} ${SRC_BRANCH_NAME} --graph --pretty=format:'%h %s <%an>' --abbrev-commit ${AFTER_DATE} --date=relative ${LOCAL_GIT_PATCH} | tr -d "*\\\|/" | awk '{print $1}'| sed '/^$/d')
     ALL_COMMIT=""
     for cm in ${GIT_COMMIT}
     do
@@ -1262,11 +1267,12 @@ function branch_diff_main()
                     --author)               AUTHOR=$2; shift;;
 					--path)					GIT_PATCH=$2; shift;;
 					-p)						GIT_PATCH=$2; shift;;
+                    --after)                GIT_LOG_AFTER_DATE=$2; shift
             esac
             shift;
     done
 
-    branch_diff $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${GIT_PATCH} ${AUTHOR}
+    branch_diff $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${GIT_PATCH} ${AUTHOR} ${GIT_LOG_AFTER_DATE}
 }
 
 function project_diff_main()
@@ -1290,11 +1296,12 @@ function project_diff_main()
                     --author)               AUTHOR=$2; shift;;
 					--path)					GIT_PATCH=$2; shift;;
 					-p)						GIT_PATCH=$2; shift;;
+                    --after)                GIT_LOG_AFTER_DATE=$2; shift
             esac
             shift;
     done
 
-    project_diff ${SOURCE_DIR} ${TARGET_DIR} $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${GIT_PATCH} ${AUTHOR} 
+    project_diff ${SOURCE_DIR} ${TARGET_DIR} $TYPE ${SOURCE_BRANCH} ${TARGET_BRANCH} ${GIT_PATCH} ${AUTHOR} ${GIT_LOG_AFTER_DATA}
 }
 #Add end
 
@@ -1398,6 +1405,7 @@ Example :
                                 --type  unmerged/all  输出log类型, 默认unmerged
                                 --author 作者名  只检查源分支中指定作者名的提交
 								--path or -p 比较的分目录
+                                --after "YYYY-MM-DD" 只比较参数日期之后的版本
 	${this} projectdiff 
 				: 根据ChangeID检查源分支中修改是否合并到目标分支
                                 --sourceproject or -sp 源分支,默认当前分支
@@ -1407,6 +1415,7 @@ Example :
                                 --type  unmerged/all  输出log类型, 默认unmerged
                                 --author 作者名  只检查源分支中指定作者名的提交
 								--path or -p 比较的分目录
+                                --after "YYYY-MM-DD" 只比较参数日期之后的版本
                 
 Other ：
 	1.脚本运行默认会检查版本是否有更新
